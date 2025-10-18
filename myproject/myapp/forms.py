@@ -1,7 +1,24 @@
 from django import forms
+from .utils import FIELDS
 
-class BookForm(forms.Form):
-    author = forms.CharField(label='Author Name', max_length=100)
-    title = forms.CharField(label='Book Title', max_length=100)
-    pages = forms.IntegerField(label='Number of Pages')
-    year = forms.IntegerField(label='Year of Publication')
+class TourForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field_info in FIELDS.items():
+            field_kwargs = {'label': field_info['label'], 'required': field_info['required']}
+            if field_info['type'] == str:
+                if 'max_length' in field_info:
+                    field_kwargs['max_length'] = field_info['max_length']
+                if 'choices' in field_info:
+                    self.fields[field_name] = forms.ChoiceField(choices=[(c, c) for c in field_info['choices']], **field_kwargs)
+                else:
+                    self.fields[field_name] = forms.CharField(**field_kwargs)
+            elif field_info['type'] == int:
+                min_val = field_info.get('min_value')
+                self.fields[field_name] = forms.IntegerField(min_value=min_val, **field_kwargs)
+            elif field_info['type'] == float:
+                min_val = field_info.get('min_value')
+                self.fields[field_name] = forms.FloatField(min_value=min_val, **field_kwargs)
+
+class UploadXMLForm(forms.Form):
+    file = forms.FileField(label='Загрузить XML-файл')

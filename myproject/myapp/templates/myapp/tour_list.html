@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Список туров</title>
+</head>
+<body>
+    {% load custom_filters %}
+    <h1>Список туристических маршрутов</h1>
+    {% if no_files %}
+        <p>Нет файлов на сервере.</p>
+    {% else %}
+        <table border="1">
+            <thead>
+                <tr>
+                    {% for field in fields %}
+                        <th>{{ field_labels|get_item:field | default:field | capfirst }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for tour in tours %}
+                    <tr>
+                        {% for field in fields %}
+                            <td>{{ tour|get_item:field | default:'-' }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+    <a href="{% url 'add_tour' %}">Добавить тур</a> | <a href="{% url 'upload_xml' %}">Загрузить XML</a> | <a href="{% url 'tour_list' %}">Список туров</a>
+</body>
+</html>

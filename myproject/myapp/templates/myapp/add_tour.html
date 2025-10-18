@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Добавить тур</title>
+</head>
+<body>
+    <h1>Добавить туристический маршрут</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Сохранить</button>
+    </form>
+    <a href="{% url 'add_tour' %}">Добавить тур</a> | <a href="{% url 'upload_xml' %}">Загрузить XML</a> | <a href="{% url 'tour_list' %}">Список туров</a>
+</body>
+</html>
