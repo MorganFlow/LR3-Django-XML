@@ -1,8 +1,10 @@
 from django import forms
 from .utils import FIELDS
+from .models import Tour
 
 class TourForm(forms.Form):
     def __init__(self, *args, **kwargs):
+        storage = forms.ChoiceField(choices=[('xml', 'XML-файл'), ('db', 'База данных')], label='Сохранить в', required=True)
         super().__init__(*args, **kwargs)
         for field_name, field_info in FIELDS.items():
             field_kwargs = {'label': field_info['label'], 'required': field_info['required']}
@@ -22,3 +24,8 @@ class TourForm(forms.Form):
 
 class UploadXMLForm(forms.Form):
     file = forms.FileField(label='Загрузить XML-файл')
+
+class TourEditForm(forms.ModelForm):
+    class Meta:
+        model = Tour
+        fields = '__all__'  # Все поля модели

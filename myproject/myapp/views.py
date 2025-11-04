@@ -1,10 +1,12 @@
 import os
 import xml.etree.ElementTree as ET
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.http import HttpResponseBadRequest
-from .forms import TourForm, UploadXMLForm
+from django.db.models import Q
+from .forms import TourForm, UploadXMLForm, TourEditForm
 from .utils import FIELDS
+from .models import Tour
 
 def get_xml_dir():
     xml_dir = os.path.join(settings.MEDIA_ROOT, 'xml_data')
@@ -69,13 +71,19 @@ def add_tour(request):
         form = TourForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
+            storage = data.pop('storage')
             try:
                 validate_tour_data(data)
-                # Создать элемент tour
-                tour = ET.Element('tour')
-                for field_name in FIELDS:
-                    ET.SubElement(tour, field_name).text = str(data[field_name])
-                append_to_xml([tour])
+                if storage == 'db':
+                    # Проверка дубликатов по name (или комбо полей, если нужно)
+                    if Tour.objects.filter(name=data['name']).exists():
+                        return HttpResponseBadRequest('Такая запись уже существует в БД.')
+                    Tour.objects.create(**data)
+                else:  # XML
+                    tour = ET.Element('tour')
+                    for field_name in FIELDS:
+                        ET.SubElement(tour, field_name).text = str(data[field_name])
+                    append_to_xml([tour])
                 return redirect('tour_list')
             except ValueError as e:
                 return HttpResponseBadRequest(str(e))
@@ -117,23 +125,65 @@ def upload_xml(request):
     return render(request, 'myapp/upload_xml.html', {'form': form})
 
 def tour_list(request):
-    file_path = get_xml_path()
-    all_tours = []
-    no_files = not os.path.exists(file_path)
-    
-    if not no_files:
-        try:
-            tree = ET.parse(file_path)
-            root = tree.getroot()
-            for tour in root.findall('tour'):
-                tour_data = {child.tag: child.text for child in tour if child.tag in FIELDS}
-                all_tours.append(tour_data)
-        except ET.ParseError:
-            no_files = True
-    
+    source = request.GET.get('source', 'all')  # Выбор источника: xml, db, all
+    tours_db = []
+    tours_xml = []
+    no_data = True
+
+    # Из БД
+    if source in ['db', 'all']:
+        tours_db = Tour.objects.all().values()  # Список dict
+        if tours_db:
+            no_data = False
+
+    # Из XML
+    if source in ['xml', 'all']:
+        file_path = get_xml_path()
+        if os.path.exists(file_path):
+            try:
+                tree = ET.parse(file_path)
+                root = tree.getroot()
+                tours_xml = [{child.tag: child.text for child in tour if child.tag in FIELDS} for tour in root.findall('tour')]
+                if tours_xml:
+                    no_data = False
+            except ET.ParseError:
+                pass
+
     return render(request, 'myapp/tour_list.html', {
-    'tours': all_tours, 
-    'no_files': no_files, 
-    'fields': list(FIELDS.keys()),
-    'field_labels': {k: v['label'] for k, v in FIELDS.items()}
-})
+        'tours_db': tours_db,
+        'tours_xml': tours_xml,
+        'no_data': no_data,
+        'fields': list(FIELDS.keys()),
+        'field_labels': {k: v['label'] for k, v in FIELDS.items()},
+        'source': source
+    })
+
+def ajax_search(request):
+    query = request.GET.get('query', '')
+    if not query:
+        return JsonResponse({'results': []})
+    results = Tour.objects.filter(
+        Q(name__icontains=query) | Q(description__icontains=query) | Q(difficulty__icontains=query)
+    ).values()
+    return JsonResponse({'results': list(results)})
+
+def edit_tour(request, pk):
+    tour = get_object_or_404(Tour, pk=pk)
+    if request.method == 'POST':
+        form = TourEditForm(request.POST, instance=tour)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                validate_tour_data(data)  # Дополнительная валидация
+                form.save()
+                return redirect('tour_list')
+            except ValueError as e:
+                return HttpResponseBadRequest(str(e))
+    else:
+        form = TourEditForm(instance=tour)
+    return render(request, 'myapp/edit_tour.html', {'form': form})
+
+def delete_tour(request, pk):
+    tour = get_object_or_404(Tour, pk=pk)
+    tour.delete()
+    return redirect('tour_list')
