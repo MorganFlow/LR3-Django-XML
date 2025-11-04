@@ -2,7 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.db.models import Q
 from .forms import TourForm, UploadXMLForm, TourEditForm
 from .utils import FIELDS

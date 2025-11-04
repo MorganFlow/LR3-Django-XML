@@ -3,8 +3,8 @@ from .utils import FIELDS
 from .models import Tour
 
 class TourForm(forms.Form):
+    storage = forms.ChoiceField(choices=[('xml', 'XML-файл'), ('db', 'База данных')], label='Сохранить в', required=True)
     def __init__(self, *args, **kwargs):
-        storage = forms.ChoiceField(choices=[('xml', 'XML-файл'), ('db', 'База данных')], label='Сохранить в', required=True)
         super().__init__(*args, **kwargs)
         for field_name, field_info in FIELDS.items():
             field_kwargs = {'label': field_info['label'], 'required': field_info['required']}
