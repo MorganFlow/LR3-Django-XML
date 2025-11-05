@@ -45,7 +45,7 @@
                                 {% for field in fields %}
                                     html += '<td>' + (tour['{{ field }}'] || '-') + '</td>';
                                 {% endfor %}
-                                html += '<td><a href="{% url "edit_tour" 0 %}" class="btn btn-sm btn-warning">Edit</a> <a href="{% url "delete_tour" 0 %}" class="btn btn-sm btn-danger">Delete</a></td>'.replace(/0/g, tour.id);
+                                html += '<td><a href="{% url "edit_tour" 0 %}" class="btn btn-sm btn-warning">Редактировать</a> <a href="{% url "delete_tour" 0 %}" class="btn btn-sm btn-danger">Удалить</a></td>'.replace(/0/g, tour.id);
                                 html += '</tr>';
                             });
                             html += '</tbody></table>';
