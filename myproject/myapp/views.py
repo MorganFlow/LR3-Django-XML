@@ -135,6 +135,7 @@ def tour_list(request):
         tours_db = Tour.objects.all().values()  # Список dict
         if tours_db:
             no_data = False
+        print('Привеет!')
 
     # Из XML
     if source in ['xml', 'all']:
